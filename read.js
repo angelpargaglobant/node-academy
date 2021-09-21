@@ -1,98 +1,62 @@
 const { readdir, readFile } = require('fs')
 const { promisify } = require('util')
+const yup = require('yup')
 
 const dateRegex = /^\d{2}[./]\d{2}[./]\d{4}$/
 const urlRegex = /^https:\/\//
 const SourcesEnum = {
-  ARTICLE:'ARTICLE', BLOG:'BLOG', TWEET:'TWEET', NEWSPAPER:'NEWSPAPER'
+  ARTICLE: 'ARTICLE',
+  BLOG: 'BLOG',
+  TWEET: 'TWEET',
+  NEWSPAPER: 'NEWSPAPER',
 }
-const validator = (file) => {
-  const isIdValid = () => {
-    return file && typeof file['id'] === 'string' && file['id']?.length <= 36
-  }
-  const isTitleValid = () => {
-    return file && typeof file['title'] === 'string' && file['title']?.length <= 255
-  }
-  const isAuthorValid = () => {
-    return file && typeof file['author'] === 'string' && file['author']?.length <= 100
-  }
-  const isModifiedAtValid = () => {
-    if (!file['modifiedAt'] || typeof file['modifiedAt'] === null || !dateRegex.test(file['modifiedAt'])) {
-      return false
-    }
-    const dNow = new Date()
-    const modAt = new Date(file['modifiedAt'])
-    return modAt < dNow
-  }
-  const isPublishedAtValid = () => {
-    if (!file['publishedAt']) {
+
+let schema = yup
+  .object()
+  .shape({
+    id: yup.string().required(),  
+    title: yup.string().max(255).required(),  
+    author: yup.string().max(100).required(),  
+    modifiedAt: yup
+      .string()
+      .required()
+      .matches(dateRegex, 'Invalid date format')
+      .test('date-time', 'invalid date format, it must be in the past', (date) => {
+        const dNow = new Date()
+        const modAt = new Date(date)
+        return modAt < dNow
+      }), 
+    publishedAt: yup
+      .string()
+      .notRequired()
+      .matches(dateRegex, 'Invalid date format')
+      .test('date-time', 'invalid date format, it must be in the past', (date) => {
+        const dNow = new Date()
+        const modAt = new Date(date)
+        return modAt < dNow
+      }), 
+    url: yup.string().url().matches(urlRegex, 'Must be a url starting with https://'),
+    keywords: yup.array().of(yup.string()).required().min(1).max(3),  
+    readMins: yup.number().required().integer().min(1).max(20),  
+    source: yup
+      .string()
+      .required()
+      .test('source-valid', 'source must be one of the following values "ARTICLE, BLOG, TWEET, NEWSPAPER"', (source) =>
+        SourcesEnum[source] ? true : false,
+      ),  
+  })
+  .test({
+    name: 'url-null-validation',
+    message: 'url can be empty or null just when publishedAt is null',
+    test: function ({ url, publishedAt }) {
+      if (!url || url?.length === 0) return !publishedAt
       return true
-    }
-    if (!dateRegex.test(file['publishedAt'])) {
-      return false
-    }
-    const dNow = new Date()
-    const modAt = new Date(file['publishedAt'])
-    return modAt < dNow
-  }
-  const isURLValid = () => {
-    if (!file['url']) return !file['publishedAt']
-    return urlRegex.test(file['url'])
-  }
-  const isKeyWordValid = () => {
-    if (!file['keywords'] || file['keywords'].length === 0 || file['keywords'].length > 3) return false
-    return file['keywords'].reduce((prev, next) => {
-      return typeof next === 'string' ? prev : false
-    }, true)
-  }
-  const isReadMinsValid = () => {
-    if (!file['readMins'] || typeof file['readMins'] !== 'number') return false
-    return file['readMins'] >= 1 && file['readMins'] <= 20
-  }
-  const isSourceValid = () => {
-    // TODO: Validar los posibles valores ARTICLE, BLOG, TWEET, NEWSPAPER.
-    if (!file['source']) return false
-    return SourcesEnum[file['source']] ? true : false
-  }
-  const isFileValid = ()=>{
-    return isIdValid() &&
-    isTitleValid() &&
-    isAuthorValid() &&
-    isModifiedAtValid() &&
-    isPublishedAtValid() &&
-    isURLValid() &&
-    isKeyWordValid() &&
-    isReadMinsValid() &&
-    isSourceValid()
-  }
-  return {
-    isIdValid,
-    isTitleValid,
-    isAuthorValid,
-    isModifiedAtValid,
-    isPublishedAtValid,
-    isURLValid,
-    isKeyWordValid,
-    isReadMinsValid,
-    isSourceValid,
-    isFileValid
-  }
-}
-const temp = {
-  id: 'string',
-  title: 'string',
-  url: 'string',
-  keywords: 'array',
-  modifiedAt: 'string',
-  publishedAt: 'string',
-  author: 'string',
-  readMins: 'number',
-  source: 'string',
-}
+    },
+  })
+
 const validate = async (data) => {
   const file = JSON.parse(data)
-  const { isFileValid } = validator(file)
-  return isFileValid()
+  return schema.isValid(file)
 }
 
 const promisifiedReadDir = promisify(readdir)
