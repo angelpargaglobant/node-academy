@@ -14,7 +14,7 @@ const SourcesEnum = {
 let schema = yup
   .object()
   .shape({
-    id: yup.string().required(),  
+    id: yup.string().length(36).required(),  
     title: yup.string().max(255).required(),  
     author: yup.string().max(100).required(),  
     modifiedAt: yup
