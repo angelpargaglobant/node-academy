@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/angelpargaglobant/node-academy/issues"
   },
-  "homepage": "https://github.com/angelpargaglobant/node-academy#readme"
+  "homepage": "https://github.com/angelpargaglobant/node-academy#readme",
+  "dependencies": {
+    "yup": "^0.32.9"
+  }
 }
