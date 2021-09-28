@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --inspect=0.0.0.0:9229 write.js"
+    "start": "node server.js --inspect=0.0.0.0:9229 write.js"
   },
   "repository": {
     "type": "git",
