@@ -3,11 +3,23 @@ const router = require("./router")
 
 const app = express()
 
-const loggerMiddleware = (req, res, next) => {
-  console.log('los headers son: ',loggerMiddleware, req.headers)
+const authMiddleware = (req, res, next) => {
+  if (!req.headers['authorization']) {
+    res.status(401).send("not autorzed")
+    return
+  }
   next()
 }
-app.use("/api/v1/articles", router.articleRouter)
+const performanceMiddleware = (req, res, next) => {
+  console.time()
+  next()
+  console.timeEnd()
+}
+
+app.use(express.json())
+app.use(performanceMiddleware)
+
+app.use('/api/v1/articles', authMiddleware,router.articleRouter)
 
 app.listen(8080, ()=>{
     console.log("app is running on 8080")
