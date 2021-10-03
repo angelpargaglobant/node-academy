@@ -20,5 +20,19 @@ async function writeFile(article) {
     console.log(err)
   }
 }
+async function updateArticle(articles) {
+  try {
+    fs.writeFile('./express/mock/db.json', JSON.stringify(articles), 'utf8', (err, data) => {
+      if (err) {
+        console.log(err)
+      }
+      if (data) {
+        console.log(data)
+      }
+    })
+  } catch (err) {
+    console.log(err)
+  }
+}
 
-module.exports={writeFile}
+module.exports = { writeFile, updateArticle }
